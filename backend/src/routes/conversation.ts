@@ -21,7 +21,7 @@ router.get("/", async (_req, res) => {
 
 router.post("/", async (req, res) => {
   const title = (req.body?.title as string | undefined) || "新对话";
-  const model = (req.body?.model as string | undefined) || "gpt-4o";
+  const model = (req.body?.model as string | undefined) || "MiniMax-M2.7";
   const [result] = await pool.execute(
     "INSERT INTO conversations (user_id, title, model) VALUES (1, ?, ?)",
     [title, model]

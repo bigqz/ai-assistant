@@ -30,6 +30,6 @@ export const config: Config = {
     port: Number(process.env.PORT || "3000"),
   },
   ai: {
-    defaultModel: "gpt-4o",
+    defaultModel: "MiniMax-M2.7",
   },
 };

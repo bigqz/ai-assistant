@@ -8,7 +8,7 @@ import { useChat } from "./composables/useChat";
 import { useConversations } from "./composables/useConversations";
 
 const activeConversationId = ref<number | null>(null);
-const selectedModel = ref("gpt-4o");
+const selectedModel = ref("MiniMax-M2.7");
 const showSettings = ref(false);
 
 const { conversations, load, remove } = useConversations();
@@ -91,5 +91,6 @@ onMounted(load);
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 </style>

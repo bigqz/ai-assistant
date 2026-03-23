@@ -13,7 +13,7 @@ function buildTitle(message: string): string {
 router.post("/send", async (req, res) => {
   const body = req.body as ChatRequest;
   const text = String(body.message || "").trim();
-  const model = String(body.model || "").trim() || "gpt-4o";
+  const model = String(body.model || "").trim() || "MiniMax-M2.7";
 
   if (!text) {
     res.status(400).json({ error: "消息不能为空" });

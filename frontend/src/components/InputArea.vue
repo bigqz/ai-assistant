@@ -36,6 +36,7 @@ function submit() {
 
 <style scoped>
 .input-wrap {
+  flex-shrink: 0;
   border-top: 1px solid var(--border);
   background: var(--bg-secondary);
   padding: 12px;
