@@ -12,9 +12,9 @@ function maskKey(key: string): string {
 }
 
 router.get("/keys", async (_req, res) => {
-  const [rows] = await pool.query("SELECT provider, api_key FROM api_keys WHERE user_id = 1");
+  const result = await pool.query("SELECT provider, api_key FROM api_keys WHERE user_id = 1");
   const existing = new Map<string, string>();
-  for (const row of rows as any[]) {
+  for (const row of result.rows as any[]) {
     existing.set(row.provider, row.api_key);
   }
 
@@ -37,10 +37,10 @@ router.post("/keys", async (req, res) => {
     return;
   }
 
-  await pool.execute(
+  await pool.query(
     `INSERT INTO api_keys (user_id, provider, api_key)
-     VALUES (1, ?, ?)
-     ON DUPLICATE KEY UPDATE api_key = VALUES(api_key)`,
+     VALUES (1, $1, $2)
+     ON CONFLICT (user_id, provider) DO UPDATE SET api_key = EXCLUDED.api_key`,
     [provider, apiKey.trim()]
   );
 
@@ -54,7 +54,7 @@ router.delete("/keys/:provider", async (req, res) => {
     return;
   }
 
-  await pool.execute("DELETE FROM api_keys WHERE user_id = 1 AND provider = ?", [provider]);
+  await pool.query("DELETE FROM api_keys WHERE user_id = 1 AND provider = $1", [provider]);
   res.json({ success: true });
 });
 

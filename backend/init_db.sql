@@ -1,43 +1,52 @@
-CREATE DATABASE IF NOT EXISTS ai_assistant CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE ai_assistant;
+-- PostgreSQL version for Neon
 
 CREATE TABLE IF NOT EXISTS users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL DEFAULT 'default_user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
-INSERT INTO users (id, username) VALUES (1, 'default_user') ON DUPLICATE KEY UPDATE username='default_user';
+INSERT INTO users (id, username) 
+VALUES (1, 'default_user') 
+ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username;
 
 CREATE TABLE IF NOT EXISTS conversations (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id INT NOT NULL DEFAULT 1,
     title VARCHAR(255) DEFAULT '新对话',
     model VARCHAR(50) DEFAULT 'MiniMax-M2.7',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_updated_at (updated_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at);
 
 CREATE TABLE IF NOT EXISTS messages (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     conversation_id INT NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
     content TEXT NOT NULL,
     model VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_conversation_id (conversation_id),
-    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
+
+ALTER TABLE messages
+ADD CONSTRAINT fk_messages_conversation_id
+FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS api_keys (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id INT NOT NULL DEFAULT 1,
     provider VARCHAR(20) NOT NULL CHECK (provider IN ('openai', 'claude', 'deepseek', 'minimax')),
     api_key VARCHAR(500) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_user_provider (user_id, provider),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, provider)
+);
+
+ALTER TABLE api_keys
+ADD CONSTRAINT fk_api_keys_user_id
+FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

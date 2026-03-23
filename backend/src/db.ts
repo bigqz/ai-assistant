@@ -1,13 +1,18 @@
-import mysql from "mysql2/promise";
+import pg from "pg";
 import { config } from "./config.js";
 
-export const pool = mysql.createPool({
+const { Pool } = pg;
+
+export const pool = new Pool({
   host: config.database.host,
   port: config.database.port,
   user: config.database.user,
   password: config.database.password,
   database: config.database.database,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });

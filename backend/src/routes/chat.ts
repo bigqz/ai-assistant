@@ -23,37 +23,37 @@ router.post("/send", async (req, res) => {
   let conversationId = body.conversationId ?? null;
   if (!conversationId) {
     const title = buildTitle(text);
-    const [insertConv] = await pool.execute(
-      "INSERT INTO conversations (user_id, title, model) VALUES (1, ?, ?)",
+    const result = await pool.query(
+      "INSERT INTO conversations (user_id, title, model) VALUES (1, $1, $2) RETURNING id",
       [title, model]
     );
-    conversationId = (insertConv as any).insertId as number;
+    conversationId = result.rows[0].id as number;
   }
 
-  await pool.execute(
-    "INSERT INTO messages (conversation_id, role, content, model) VALUES (?, 'user', ?, ?)",
+  await pool.query(
+    "INSERT INTO messages (conversation_id, role, content, model) VALUES ($1, 'user', $2, $3)",
     [conversationId, text, model]
   );
-  await pool.execute("UPDATE conversations SET model = ? WHERE id = ? AND user_id = 1", [
+  await pool.query("UPDATE conversations SET model = $1 WHERE id = $2 AND user_id = 1", [
     model,
     conversationId,
   ]);
 
-  const [historyRows] = await pool.execute(
-    "SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY id ASC",
+  const historyResult = await pool.query(
+    "SELECT role, content FROM messages WHERE conversation_id = $1 ORDER BY id ASC",
     [conversationId]
   );
-  const history: ChatMessage[] = (historyRows as any[]).map((row) => ({
+  const history: ChatMessage[] = historyResult.rows.map((row: any) => ({
     role: row.role,
     content: row.content,
   }));
 
   const provider = getProviderByModel(model);
-  const [keyRows] = await pool.execute(
-    "SELECT api_key FROM api_keys WHERE user_id = 1 AND provider = ? LIMIT 1",
+  const keyResult = await pool.query(
+    "SELECT api_key FROM api_keys WHERE user_id = 1 AND provider = $1 LIMIT 1",
     [provider]
   );
-  const apiKey = (keyRows as any[])[0]?.api_key as string | undefined;
+  const apiKey = keyResult.rows[0]?.api_key as string | undefined;
   if (!apiKey) {
     res.status(400).json({ error: `未配置 ${provider} 的API Key` });
     return;
@@ -76,8 +76,8 @@ router.post("/send", async (req, res) => {
     res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
   } finally {
     if (assistantContent.trim()) {
-      await pool.execute(
-        "INSERT INTO messages (conversation_id, role, content, model) VALUES (?, 'assistant', ?, ?)",
+      await pool.query(
+        "INSERT INTO messages (conversation_id, role, content, model) VALUES ($1, 'assistant', $2, $3)",
         [conversationId, assistantContent, model]
       );
     }
